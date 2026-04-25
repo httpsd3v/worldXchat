@@ -86,6 +86,7 @@ HTML_TEMPLATE = """
             border-radius: 20px;
             border: none;
             background: #f3f6f4;
+            colour: black;
             border: 1px solid black;
         }
     </style>
