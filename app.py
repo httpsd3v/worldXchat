@@ -85,7 +85,7 @@ HTML_TEMPLATE = """
             padding: 10px 15px;
             border-radius: 20px;
             border: none;
-            background: #674ea7;
+            background: #3897F0;
             colour: black;
             cursor: pointer;            
         }
