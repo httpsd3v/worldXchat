@@ -49,6 +49,7 @@ HTML_TEMPLATE = """
             text-align: center;
             font-weight: bold;
             border-bottom: 1px solid #222;
+            background: black;
         }
 
         #chat {
@@ -101,9 +102,7 @@ HTML_TEMPLATE = """
             display: flex;
             padding: 12px;
             gap: 10px;
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255,255,255,0.1);
+            background: black;
         }
 
         input {
