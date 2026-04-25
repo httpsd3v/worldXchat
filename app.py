@@ -4,7 +4,10 @@ import os
 app = Flask(__name__)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hvaujoxdpowcvbcgoefk.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2YXVqb3hkcG93Y3ZiY2dvZWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4Mzk0NzMsImV4cCI6MjA5MjQxNTQ3M30.TXL8M0LIXUTiOc_-GeEIcTPPpVUPLwon2qCDzuMyApg")
+SUPABASE_KEY = os.getenv(
+    "SUPABASE_KEY",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2YXVqb3hkcG93Y3ZiY2dvZWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4Mzk0NzMsImV4cCI6MjA5MjQxNTQ3M30.TXL8M0LIXUTiOc_-GeEIcTPPpVUPLwon2qCDzuMyApg"
+)
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -12,6 +15,7 @@ HTML_TEMPLATE = """
 <head>
     <title>Mini InstaChat</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
@@ -29,7 +33,6 @@ HTML_TEMPLATE = """
             padding: 15px;
             text-align: center;
             font-weight: bold;
-            font-size: 18px;
             border-bottom: 1px solid #222;
         }
 
@@ -61,7 +64,6 @@ HTML_TEMPLATE = """
         .username {
             font-size: 12px;
             opacity: 0.7;
-            margin-bottom: 3px;
         }
 
         .input-area {
@@ -85,14 +87,6 @@ HTML_TEMPLATE = """
             border: none;
             background: #3897f0;
             color: white;
-            cursor: pointer;
-        }
-
-        #auth {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding: 20px;
         }
     </style>
 </head>
@@ -109,48 +103,81 @@ HTML_TEMPLATE = """
 
 <div id="chat" style="display:none;"></div>
 
-<div class="input-area" style="display:none;" id="chatInput">
+<div class="input-area" id="chatInput" style="display:none;">
     <input type="text" id="msgInput" placeholder="Message...">
     <button onclick="send()">Send</button>
 </div>
 
 <script>
-const client = supabase.createClient("{{ url }}", "{{ key }}");
+/* =========================
+   SAFE SUPABASE INIT
+========================= */
+
+if (!window.supabase) {
+    alert("Supabase failed to load!");
+}
+
+const client = supabase.createClient(
+    "{{ url }}",
+    "{{ key }}"
+);
 
 let currentUser = localStorage.getItem("username");
 
-if (currentUser) {
-    startChat();
-}
+/* =========================
+   START CHAT
+========================= */
+
+if (currentUser) startChat();
+
+/* =========================
+   REGISTER
+========================= */
 
 async function register() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
-    const { error } = await client.from("users").insert([{ username, password }]);
+    const { error } = await client.from("users").insert([
+        { username, password }
+    ]);
 
-    if (error) return alert("Username taken!");
+    if (error) {
+        alert(error.message);
+        return;
+    }
 
     alert("Registered! Now login.");
 }
+
+/* =========================
+   LOGIN
+========================= */
 
 async function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
-    const { data } = await client
+    const { data, error } = await client
         .from("users")
         .select("*")
         .eq("username", username)
         .eq("password", password)
-        .single();
+        .maybeSingle();
 
-    if (!data) return alert("Invalid login!");
+    if (error || !data) {
+        alert("Invalid login!");
+        return;
+    }
 
     localStorage.setItem("username", username);
     currentUser = username;
     startChat();
 }
+
+/* =========================
+   CHAT START
+========================= */
 
 function startChat() {
     document.getElementById("auth").style.display = "none";
@@ -160,28 +187,42 @@ function startChat() {
     fetchHistory();
 
     client.channel("room1")
-        .on("postgres_changes",
+        .on(
+            "postgres_changes",
             { event: "INSERT", schema: "public", table: "messages" },
             payload => renderMsg(payload.new)
         )
         .subscribe();
 }
 
+/* =========================
+   LOAD MESSAGES
+========================= */
+
 async function fetchHistory() {
-    const { data } = await client
+    const { data, error } = await client
         .from("messages")
         .select("*")
         .order("created_at", { ascending: true });
 
+    if (error) {
+        console.log(error);
+        return;
+    }
+
     data.forEach(renderMsg);
 }
+
+/* =========================
+   RENDER MESSAGE
+========================= */
 
 function renderMsg(msg) {
     const div = document.createElement("div");
     div.className = "msg " + (msg.username === currentUser ? "me" : "other");
 
     div.innerHTML = `
-        <div class="username">${msg.username}</div>
+        <div class="username">${msg.username || "unknown"}</div>
         <div>${msg.content}</div>
     `;
 
@@ -189,14 +230,25 @@ function renderMsg(msg) {
     document.getElementById("chat").scrollTop = 999999;
 }
 
+/* =========================
+   SEND MESSAGE
+========================= */
+
 async function send() {
     const input = document.getElementById("msgInput");
     if (!input.value) return;
 
-    await client.from("messages").insert([{
-        content: input.value,
-        username: currentUser
-    }]);
+    const { error } = await client.from("messages").insert([
+        {
+            content: input.value,
+            username: currentUser
+        }
+    ]);
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
 
     input.value = "";
 }
@@ -208,7 +260,11 @@ async function send() {
 
 @app.route('/')
 def index():
-    return render_template_string(HTML_TEMPLATE, url=SUPABASE_URL, key=SUPABASE_KEY)
+    return render_template_string(
+        HTML_TEMPLATE,
+        url=SUPABASE_URL,
+        key=SUPABASE_KEY
+    )
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
