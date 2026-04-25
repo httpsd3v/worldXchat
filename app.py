@@ -92,7 +92,7 @@ HTML_TEMPLATE = """
 </head>
 <body>
 
-<header>ShatterChat</header>
+<header>✨ShatterChat</header>
 
 <div id="auth">
     <input type="text" id="username" placeholder="Username">
