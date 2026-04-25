@@ -3,136 +3,204 @@ import os
 
 app = Flask(__name__)
 
-# --- CONFIGURATION ---
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hvaujoxdpowcvbcgoefk.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "sb_publishable_7l6Ur8YvfVoKq8p5x3J55Q_0lvSWx2l")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "YOUR_ANON_KEY")
 
-# --- HTML TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mini Text Realtime</title>
-
-    <!-- Correct Supabase CDN -->
+    <title>Mini InstaChat</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
         body {
+            margin: 0;
             font-family: -apple-system, sans-serif;
-            background: #f0f2f5;
+            background: #000;
+            color: white;
             display: flex;
             flex-direction: column;
             height: 100vh;
-            margin: 0;
+        }
+
+        header {
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            border-bottom: 1px solid #222;
         }
 
         #chat {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
 
         .msg {
-            background: white;
             padding: 10px 15px;
             border-radius: 18px;
-            width: fit-content;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            max-width: 70%;
+        }
+
+        .me {
+            align-self: flex-end;
+            background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4);
+        }
+
+        .other {
+            align-self: flex-start;
+            background: #262626;
+        }
+
+        .username {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 3px;
         }
 
         .input-area {
-            background: white;
-            padding: 20px;
             display: flex;
-            gap: 10px;
-            border-top: 1px solid #ddd;
+            padding: 10px;
+            border-top: 1px solid #222;
         }
 
         input {
             flex: 1;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 25px;
+            padding: 10px;
+            border-radius: 20px;
+            border: none;
             outline: none;
         }
 
         button {
-            background: #007bff;
-            color: white;
+            margin-left: 10px;
+            padding: 10px 15px;
+            border-radius: 20px;
             border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
+            background: #3897f0;
+            color: white;
             cursor: pointer;
+        }
+
+        #auth {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px;
         }
     </style>
 </head>
 <body>
 
-    <div id="chat"></div>
+<header>InstaChat</header>
 
-    <div class="input-area">
-        <input type="text" id="msgInput"
-            placeholder="Write a message..."
-            onkeypress="if(event.key==='Enter') send()">
-        <button onclick="send()">Send</button>
-    </div>
+<div id="auth">
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="register()">Register</button>
+    <button onclick="login()">Login</button>
+</div>
 
-    <script>
-        // Create Supabase client
-        const client = supabase.createClient("{{ url }}", "{{ key }}");
-        const chatDiv = document.getElementById('chat');
+<div id="chat" style="display:none;"></div>
 
-        // 1️⃣ Fetch existing messages
-        async function fetchHistory() {
-            const { data } = await client
-                .from('messages')
-                .select('*')
-                .order('created_at', { ascending: true });
+<div class="input-area" style="display:none;" id="chatInput">
+    <input type="text" id="msgInput" placeholder="Message...">
+    <button onclick="send()">Send</button>
+</div>
 
-            if (data) {
-                data.forEach(m => renderMsg(m.content));
-            }
-        }
+<script>
+const client = supabase.createClient("{{ url }}", "{{ key }}");
 
-        // 2️⃣ Realtime listener
-        client.channel('room1')
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'messages' },
-                payload => {
-                    renderMsg(payload.new.content);
-                }
-            )
-            .subscribe();
+let currentUser = localStorage.getItem("username");
 
-        // 3️⃣ Render message
-        function renderMsg(text) {
-            const div = document.createElement('div');
-            div.className = 'msg';
-            div.innerText = text;
-            chatDiv.appendChild(div);
-            chatDiv.scrollTop = chatDiv.scrollHeight;
-        }
+if (currentUser) {
+    startChat();
+}
 
-        // 4️⃣ Send message
-        async function send() {
-            const el = document.getElementById('msgInput');
-            if (!el.value) return;
+async function register() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
 
-            const content = el.value;
-            el.value = '';
+    const { error } = await client.from("users").insert([{ username, password }]);
 
-            await client.from('messages').insert([{ content }]);
-        }
+    if (error) return alert("Username taken!");
 
-        fetchHistory();
-    </script>
+    alert("Registered! Now login.");
+}
+
+async function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    const { data } = await client
+        .from("users")
+        .select("*")
+        .eq("username", username)
+        .eq("password", password)
+        .single();
+
+    if (!data) return alert("Invalid login!");
+
+    localStorage.setItem("username", username);
+    currentUser = username;
+    startChat();
+}
+
+function startChat() {
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("chat").style.display = "flex";
+    document.getElementById("chatInput").style.display = "flex";
+
+    fetchHistory();
+
+    client.channel("room1")
+        .on("postgres_changes",
+            { event: "INSERT", schema: "public", table: "messages" },
+            payload => renderMsg(payload.new)
+        )
+        .subscribe();
+}
+
+async function fetchHistory() {
+    const { data } = await client
+        .from("messages")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+    data.forEach(renderMsg);
+}
+
+function renderMsg(msg) {
+    const div = document.createElement("div");
+    div.className = "msg " + (msg.username === currentUser ? "me" : "other");
+
+    div.innerHTML = `
+        <div class="username">${msg.username}</div>
+        <div>${msg.content}</div>
+    `;
+
+    document.getElementById("chat").appendChild(div);
+    document.getElementById("chat").scrollTop = 999999;
+}
+
+async function send() {
+    const input = document.getElementById("msgInput");
+    if (!input.value) return;
+
+    await client.from("messages").insert([{
+        content: input.value,
+        username: currentUser
+    }]);
+
+    input.value = "";
+}
+</script>
 
 </body>
 </html>
@@ -140,11 +208,7 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def index():
-    return render_template_string(
-        HTML_TEMPLATE,
-        url=SUPABASE_URL,
-        key=SUPABASE_KEY
-    )
+    return render_template_string(HTML_TEMPLATE, url=SUPABASE_URL, key=SUPABASE_KEY)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
