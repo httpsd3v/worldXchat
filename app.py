@@ -13,7 +13,7 @@ HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mini InstaChat</title>
+    <title>Mini ShatterChat</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -92,7 +92,7 @@ HTML_TEMPLATE = """
 </head>
 <body>
 
-<header>InstaChat</header>
+<header>ShatterChat</header>
 
 <div id="auth">
     <input type="text" id="username" placeholder="Username">
