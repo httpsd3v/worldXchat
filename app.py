@@ -21,8 +21,9 @@ HTML_TEMPLATE = """
     <style>
         body {
             margin: 0;
-            font-family: -apple-system, sans-serif;
-            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center center fixed;
+            background-size: cover;
             color: white;
             display: flex;
             flex-direction: column;
