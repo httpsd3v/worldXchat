@@ -87,7 +87,7 @@ HTML_TEMPLATE = """
             border: none;
             background: #f3f6f4;
             colour: black;
-            border: 1px solid black;
+            cursor: pointer;            
         }
     </style>
 </head>
@@ -106,7 +106,7 @@ HTML_TEMPLATE = """
 
 <div class="input-area" id="chatInput" style="display:none;">
     <input type="text" id="msgInput" placeholder="Message...">
-    <button onclick="send()"><i class="fa-solid fa-paper-plane"></i></button>
+    <button onclick="send()">send</button>
 </div>
 
 <script>
