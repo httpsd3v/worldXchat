@@ -29,6 +29,20 @@ HTML_TEMPLATE = """
             flex-direction: column;
             height: 100vh;
         }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(
+                120deg,
+                rgba(245,133,41,0.3),
+                rgba(221,42,123,0.3),
+                rgba(129,52,175,0.3),
+                rgba(81,91,212,0.3)
+            );
+            filter: blur(120px);
+            z-index: -1;
+        }
 
         header {
             padding: 15px;
@@ -40,26 +54,42 @@ HTML_TEMPLATE = """
         #chat {
             flex: 1;
             overflow-y: auto;
-            padding: 15px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
+        
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .msg {
-            padding: 10px 15px;
-            border-radius: 18px;
+            padding: 12px 16px;
+            border-radius: 20px;
             max-width: 70%;
+            font-size: 14px;
+            line-height: 1.4;
+            backdrop-filter: blur(15px);
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
         }
-
+        
         .me {
-            align-self: flex-end;
-            background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4);
+            margin-left: auto;
+            background: linear-gradient(
+                45deg,
+                rgba(245,133,41,0.6),
+                rgba(221,42,123,0.6),
+                rgba(129,52,175,0.6),
+                rgba(81,91,212,0.6)
+            );
+            border-bottom-right-radius: 5px;
         }
-
+        
         .other {
-            align-self: flex-start;
-            background: #262626;
+            border-bottom-left-radius: 5px;
         }
 
         .username {
@@ -69,15 +99,20 @@ HTML_TEMPLATE = """
 
         .input-area {
             display: flex;
-            padding: 10px;
-            border-top: 1px solid #222;
+            padding: 12px;
+            gap: 10px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
 
         input {
             flex: 1;
-            padding: 10px;
+            padding: 12px 15px;
             border-radius: 20px;
-            border: none;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: white;
             outline: none;
         }
 
