@@ -3,8 +3,8 @@ from flask import Flask, render_template_string, os
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "your-anon-key")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hvaujoxdpowcvbcgoefk.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "sb_publishable_7l6Ur8YvfVoKq8p5x3J55Q_0lvSWx2l")
 
 # --- HTML TEMPLATE ---
 HTML_TEMPLATE = """
