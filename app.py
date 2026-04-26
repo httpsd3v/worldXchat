@@ -37,7 +37,7 @@ HTML_TEMPLATE = """
                 rgba(129,52,175,0.3),
                 rgba(81,91,212,0.3)
             );
-            filter: blur(120px);
+            filter: blur(10px);
             z-index: -1;
         }
 
