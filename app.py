@@ -41,6 +41,21 @@ HTML_TEMPLATE = """
             z-index: -1;
         }
 
+        #auth {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 50px 25px;
+        }
+
         header {
             padding: 15px;
             text-align: center;
@@ -104,12 +119,26 @@ HTML_TEMPLATE = """
 
         input {
             flex: 1;
-            padding: 12px 15px;
-            border-radius: 20px;
+            padding: 12px 55px;
+            border-radius: 5px;
+            margin-top: 10px;
             border: 1px solid rgba(255,255,255,0.2);
             background: rgba(255,255,255,0.08);
             color: white;
             outline: none;
+        }
+
+        #Register, #Login {
+            margin-left: 10px;
+            padding: 12px 55px;
+            width: 280px;
+            border-radius: 5px;
+            border: none;
+            background: #3897F0;
+            colour: black;
+            cursor: pointer;  
+            margin-top: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         button {
@@ -146,8 +175,8 @@ HTML_TEMPLATE = """
 <div id="auth">
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
-    <button onclick="register()">Register</button>
-    <button onclick="login()">Login</button>
+    <button onclick="register()" id="Register">Register</button>
+    <button onclick="login()" id="Login">Login</button>
 </div>
 
 <div id="chat" style="display:none;"></div>
