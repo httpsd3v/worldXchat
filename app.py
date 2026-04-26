@@ -19,7 +19,7 @@ HTML_TEMPLATE = """
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center center fixed;
+            background: url("https://plus.unsplash.com/premium_photo-1664300316509-2f75b1c2e317?q=80&w=869&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D") no-repeat center center fixed;
             background-size: cover;
             color: white;
             display: flex;
