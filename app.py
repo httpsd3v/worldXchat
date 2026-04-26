@@ -22,26 +22,11 @@ HTML_TEMPLATE = """
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center center fixed;
-            background-size: cover;
+            background: #111;
             color: white;
             display: flex;
             flex-direction: column;
             height: 100vh;
-        }
-        body::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            background: linear-gradient(
-                120deg,
-                rgba(245,133,41,0.3),
-                rgba(221,42,123,0.3),
-                rgba(129,52,175,0.3),
-                rgba(81,91,212,0.3)
-            );
-            filter: blur(120px);
-            z-index: -1;
         }
 
         header {
@@ -50,85 +35,78 @@ HTML_TEMPLATE = """
             font-weight: bold;
             border-bottom: 1px solid #222;
             background: black;
+            position: relative;
+        }
+
+        #logoutBtn {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: none;
+            background: #ff4d4d;
+            color: white;
+            cursor: pointer;
+            display: none;
         }
 
         #chat {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: 12px;
-        
             background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .msg {
-            padding: 12px 16px;
-            border-radius: 20px;
+            padding: 12px;
+            border-radius: 12px;
             max-width: 70%;
-            font-size: 14px;
-            line-height: 1.4;
-            backdrop-filter: blur(15px);
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-        }
-        
-        .me {
-            margin-left: auto;
-            background: linear-gradient(
-                45deg,
-                rgba(245,133,41,0.6),
-                rgba(221,42,123,0.6),
-                rgba(129,52,175,0.6),
-                rgba(81,91,212,0.6)
-            );
-            border-bottom-right-radius: 5px;
-        }
-        
-        .other {
-            border-bottom-left-radius: 5px;
         }
 
-        .username {
-            font-size: 12px;
-            opacity: 0.7;
-        }
+        .me { background: #3897F0; margin-left: auto; }
+        .other { background: #333; }
 
         .input-area {
-            display: flex;
+            display: none;
             padding: 12px;
-            gap: 10px;
             background: black;
+            gap: 10px;
         }
 
         input {
             flex: 1;
-            padding: 12px 15px;
+            padding: 12px;
             border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.08);
+            border: none;
+            background: #222;
             color: white;
-            outline: none;
         }
 
         button {
-            margin-left: 10px;
             padding: 10px 15px;
             border-radius: 20px;
             border: none;
             background: #3897F0;
-            colour: black;
-            cursor: pointer;            
+            color: white;
+            cursor: pointer;
+        }
+
+        #auth {
+            padding: 20px;
         }
     </style>
 </head>
+
 <body>
 
-<header>✨ShatterChat</header>
+<header>
+    ✨ ShatterChat
+    <button id="logoutBtn" onclick="logout()">Logout</button>
+</header>
 
 <div id="auth">
     <input type="text" id="username" placeholder="Username">
@@ -137,94 +115,67 @@ HTML_TEMPLATE = """
     <button onclick="login()">Login</button>
 </div>
 
-<div id="chat" style="display:none;"></div>
+<div id="chat"></div>
 
-<div class="input-area" id="chatInput" style="display:none;">
+<div class="input-area" id="chatInput">
     <input type="text" id="msgInput" placeholder="Message...">
-    <button onclick="send()">send</button>
+    <button onclick="send()">Send</button>
 </div>
 
 <script>
-/* =========================
-   SAFE SUPABASE INIT
-========================= */
 
-if (!window.supabase) {
-    alert("Supabase failed to load!");
-}
-
-const client = supabase.createClient(
-    "{{ url }}",
-    "{{ key }}"
-);
+const client = supabase.createClient("{{ url }}", "{{ key }}");
 
 let currentUser = localStorage.getItem("username");
-
-/* =========================
-   START CHAT
-========================= */
 
 if (currentUser) startChat();
 
 /* =========================
    REGISTER
 ========================= */
-
 async function register() {
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
+    const username = username.value;
+    const password = password.value;
 
-    const { error } = await client.from("users").insert([
-        { username, password }
-    ]);
-
-    if (error) {
-        alert(error.message);
-        return;
-    }
-
-    alert("Registered! Now login.");
+    await client.from("users").insert([{ username, password }]);
+    alert("Registered!");
 }
 
 /* =========================
    LOGIN
 ========================= */
-
 async function login() {
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
+    const usernameVal = username.value;
+    const passwordVal = password.value;
 
-    const { data, error } = await client
+    const { data } = await client
         .from("users")
         .select("*")
-        .eq("username", username)
-        .eq("password", password)
+        .eq("username", usernameVal)
+        .eq("password", passwordVal)
         .maybeSingle();
 
-    if (error || !data) {
-        alert("Invalid login!");
-        return;
-    }
+    if (!data) return alert("Invalid login!");
 
-    localStorage.setItem("username", username);
-    currentUser = username;
+    localStorage.setItem("username", usernameVal);
+    currentUser = usernameVal;
+
     startChat();
 }
 
 /* =========================
-   CHAT START
+   START CHAT
 ========================= */
-
 function startChat() {
-    document.getElementById("auth").style.display = "none";
-    document.getElementById("chat").style.display = "flex";
-    document.getElementById("chatInput").style.display = "flex";
+    auth.style.display = "none";
+    chat.style.display = "flex";
+    chatInput.style.display = "flex";
+    logoutBtn.style.display = "block";
 
     fetchHistory();
 
     client.channel("room1")
-        .on(
-            "postgres_changes",
+        .on("postgres_changes",
             { event: "INSERT", schema: "public", table: "messages" },
             payload => renderMsg(payload.new)
         )
@@ -232,19 +183,30 @@ function startChat() {
 }
 
 /* =========================
+   LOGOUT (NEW)
+========================= */
+function logout() {
+    if (!confirm("Are you sure you want to logout?")) return;
+
+    localStorage.removeItem("username");
+    currentUser = null;
+
+    chat.innerHTML = "";
+
+    auth.style.display = "block";
+    chat.style.display = "none";
+    chatInput.style.display = "none";
+    logoutBtn.style.display = "none";
+}
+
+/* =========================
    LOAD MESSAGES
 ========================= */
-
 async function fetchHistory() {
-    const { data, error } = await client
+    const { data } = await client
         .from("messages")
         .select("*")
         .order("created_at", { ascending: true });
-
-    if (error) {
-        console.log(error);
-        return;
-    }
 
     data.forEach(renderMsg);
 }
@@ -252,42 +214,30 @@ async function fetchHistory() {
 /* =========================
    RENDER MESSAGE
 ========================= */
-
 function renderMsg(msg) {
     const div = document.createElement("div");
     div.className = "msg " + (msg.username === currentUser ? "me" : "other");
 
-    div.innerHTML = `
-        <div class="username">${msg.username || "unknown"}</div>
-        <div>${msg.content}</div>
-    `;
+    div.textContent = msg.username + ": " + msg.content;
 
-    document.getElementById("chat").appendChild(div);
-    document.getElementById("chat").scrollTop = 999999;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
 }
 
 /* =========================
    SEND MESSAGE
 ========================= */
-
 async function send() {
-    const input = document.getElementById("msgInput");
-    if (!input.value) return;
+    if (!msgInput.value) return;
 
-    const { error } = await client.from("messages").insert([
-        {
-            content: input.value,
-            username: currentUser
-        }
-    ]);
+    await client.from("messages").insert([{
+        username: currentUser,
+        content: msgInput.value
+    }]);
 
-    if (error) {
-        alert(error.message);
-        return;
-    }
-
-    input.value = "";
+    msgInput.value = "";
 }
+
 </script>
 
 </body>
