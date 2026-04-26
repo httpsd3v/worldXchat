@@ -26,7 +26,6 @@ HTML_TEMPLATE = """
             flex-direction: column;
             height: 100vh;
         }
-
         body::before {
             content: "";
             position: fixed;
@@ -48,7 +47,6 @@ HTML_TEMPLATE = """
             font-weight: bold;
             border-bottom: 1px solid #222;
             background: black;
-            position: relative;
         }
 
         #chat {
@@ -58,8 +56,11 @@ HTML_TEMPLATE = """
             display: flex;
             flex-direction: column;
             gap: 12px;
+        
             background: rgba(255,255,255,0.05);
             backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .msg {
@@ -68,10 +69,11 @@ HTML_TEMPLATE = """
             max-width: 70%;
             font-size: 14px;
             line-height: 1.4;
+            backdrop-filter: blur(15px);
             background: rgba(255,255,255,0.08);
             border: 1px solid rgba(255,255,255,0.15);
         }
-
+        
         .me {
             margin-left: auto;
             background: linear-gradient(
@@ -81,6 +83,11 @@ HTML_TEMPLATE = """
                 rgba(129,52,175,0.6),
                 rgba(81,91,212,0.6)
             );
+            border-bottom-right-radius: 5px;
+        }
+        
+        .other {
+            border-bottom-left-radius: 5px;
         }
 
         .username {
@@ -97,7 +104,7 @@ HTML_TEMPLATE = """
 
         input {
             flex: 1;
-            padding: 12px;
+            padding: 12px 15px;
             border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.2);
             background: rgba(255,255,255,0.08);
@@ -106,20 +113,20 @@ HTML_TEMPLATE = """
         }
 
         button {
+            margin-left: 10px;
             padding: 10px 15px;
             border-radius: 20px;
             border: none;
             background: #3897F0;
-            cursor: pointer;
-            color: black;
+            colour: black;
+            cursor: pointer;            
         }
     </style>
 </head>
 <body>
 
 <header>
-    ✨ ShatterChat
-
+    ✨ShatterChat
     <button id="logoutBtn" onclick="logout()" style="
         position:absolute;
         right:15px;
@@ -140,19 +147,24 @@ HTML_TEMPLATE = """
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
     <button onclick="register()">Register</button>
-    <button onclick="login(); enableNotifications();">Login</button>
+    <button onclick="login()">Login</button>
 </div>
 
 <div id="chat" style="display:none;"></div>
 
 <div class="input-area" id="chatInput" style="display:none;">
     <input type="text" id="msgInput" placeholder="Message...">
-    <button onclick="send()">Send</button>
+    <button onclick="send()">send</button>
 </div>
 
 <script>
+/* =========================
+   SAFE SUPABASE INIT
+========================= */
 
-const ping = new Audio("https://actions.google.com/sounds/v1/notifications/notification_1.mp3");
+if (!window.supabase) {
+    alert("Supabase failed to load!");
+}
 
 const client = supabase.createClient(
     "{{ url }}",
@@ -160,65 +172,17 @@ const client = supabase.createClient(
 );
 
 let currentUser = localStorage.getItem("username");
-let channel = null;
-
-/* =========================
-   NOTIFICATIONS FIXED
-========================= */
-function enableNotifications() {
-    if (!("Notification" in window)) return;
-
-    if (Notification.permission === "default") {
-        Notification.requestPermission().then(p => {
-            console.log("Permission:", p);
-        });
-    }
-}
 
 /* =========================
    START CHAT
 ========================= */
-function startChat() {
-    document.getElementById("auth").style.display = "none";
-    document.getElementById("chat").style.display = "flex";
-    document.getElementById("chatInput").style.display = "flex";
-    document.getElementById("logoutBtn").style.display = "block";
 
-    fetchHistory();
-
-    if (channel) {
-        client.removeChannel(channel);
-    }
-
-    channel = client.channel("room1")
-        .on(
-            "postgres_changes",
-            { event: "INSERT", schema: "public", table: "messages" },
-            payload => {
-                renderMsg(payload.new);
-
-                console.log("New message:", payload.new);
-
-                if (payload.new.username !== currentUser) {
-
-                    if (Notification.permission === "granted") {
-                        new Notification("💬 " + payload.new.username, {
-                            body: payload.new.content
-                        });
-                    } else {
-                        console.log("Notifications not allowed:", Notification.permission);
-                    }
-
-                    ping.play().catch(err => console.log("Audio blocked:", err));
-                }
-            }
-        )
-        .subscribe();
-}
+if (currentUser) startChat();
 
 /* =========================
    REGISTER
 ========================= */
+
 async function register() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
@@ -227,7 +191,10 @@ async function register() {
         { username, password }
     ]);
 
-    if (error) return alert(error.message);
+    if (error) {
+        alert(error.message);
+        return;
+    }
 
     alert("Registered! Now login.");
 }
@@ -235,6 +202,7 @@ async function register() {
 /* =========================
    LOGIN
 ========================= */
+
 async function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
@@ -246,24 +214,76 @@ async function login() {
         .eq("password", password)
         .maybeSingle();
 
-    if (error || !data) return alert("Invalid login!");
+    if (error || !data) {
+        alert("Invalid login!");
+        return;
+    }
 
     localStorage.setItem("username", username);
     currentUser = username;
-
     startChat();
 }
 
 /* =========================
-   LOAD HISTORY
+   CHAT START
 ========================= */
+
+function startChat() {
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("chat").style.display = "flex";
+    document.getElementById("chatInput").style.display = "flex";
+
+    document.getElementById("logoutBtn").style.display = "block";
+
+    fetchHistory();
+
+    client.channel("room1")
+        .on(
+            "postgres_changes",
+            { event: "INSERT", schema: "public", table: "messages" },
+            payload => renderMsg(payload.new)
+        )
+        .subscribe();
+}
+
+/* =========================
+   LOG OUT
+========================= */
+function logout() {
+    if (!confirm("Logout?")) return;
+
+    // 1. clear session
+    localStorage.removeItem("username");
+    currentUser = null;
+
+    // 2. clear chat UI
+    document.getElementById("chat").innerHTML = "";
+
+    // 3. reset UI
+    document.getElementById("auth").style.display = "block";
+    document.getElementById("chat").style.display = "none";
+    document.getElementById("chatInput").style.display = "none";
+    document.getElementById("logoutBtn").style.display = "none";
+
+    // 4. optional hard reset of page state
+    location.hash = "";
+}
+
+
+/* =========================
+   LOAD MESSAGES
+========================= */
+
 async function fetchHistory() {
-    const { data } = await client
+    const { data, error } = await client
         .from("messages")
         .select("*")
         .order("created_at", { ascending: true });
 
-    if (!data) return;
+    if (error) {
+        console.log(error);
+        return;
+    }
 
     data.forEach(renderMsg);
 }
@@ -271,6 +291,7 @@ async function fetchHistory() {
 /* =========================
    RENDER MESSAGE
 ========================= */
+
 function renderMsg(msg) {
     const div = document.createElement("div");
     div.className = "msg " + (msg.username === currentUser ? "me" : "other");
@@ -287,43 +308,25 @@ function renderMsg(msg) {
 /* =========================
    SEND MESSAGE
 ========================= */
+
 async function send() {
     const input = document.getElementById("msgInput");
     if (!input.value) return;
 
-    await client.from("messages").insert([
+    const { error } = await client.from("messages").insert([
         {
             content: input.value,
             username: currentUser
         }
     ]);
 
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
     input.value = "";
 }
-
-/* =========================
-   LOGOUT
-========================= */
-function logout() {
-    localStorage.removeItem("username");
-    currentUser = null;
-
-    document.getElementById("chat").innerHTML = "";
-
-    document.getElementById("auth").style.display = "block";
-    document.getElementById("chat").style.display = "none";
-    document.getElementById("chatInput").style.display = "none";
-    document.getElementById("logoutBtn").style.display = "none";
-
-    if (channel) {
-        client.removeChannel(channel);
-        channel = null;
-    }
-}
-
-/* AUTO LOGIN */
-if (currentUser) startChat();
-
 </script>
 
 </body>
