@@ -128,7 +128,23 @@ HTML_TEMPLATE = """
 </head>
 <body>
 
-<header>✨ShatterChat</header>
+<header>
+    ✨ShatterChat
+    <button id="logoutBtn" onclick="logout()" style="
+        position:absolute;
+        right:15px;
+        top:10px;
+        display:none;
+        padding:6px 12px;
+        border:none;
+        border-radius:10px;
+        background:red;
+        color:white;
+        cursor:pointer;
+    ">
+        Logout
+    </button>
+</header>
 
 <div id="auth">
     <input type="text" id="username" placeholder="Username">
@@ -220,6 +236,8 @@ function startChat() {
     document.getElementById("chat").style.display = "flex";
     document.getElementById("chatInput").style.display = "flex";
 
+    document.getElementById("logoutBtn").style.display = "block";
+
     fetchHistory();
 
     client.channel("room1")
@@ -230,6 +248,30 @@ function startChat() {
         )
         .subscribe();
 }
+
+/* =========================
+   LOG OUT
+========================= */
+function logout() {
+    if (!confirm("Logout?")) return;
+
+    // 1. clear session
+    localStorage.removeItem("username");
+    currentUser = null;
+
+    // 2. clear chat UI
+    document.getElementById("chat").innerHTML = "";
+
+    // 3. reset UI
+    document.getElementById("auth").style.display = "block";
+    document.getElementById("chat").style.display = "none";
+    document.getElementById("chatInput").style.display = "none";
+    document.getElementById("logoutBtn").style.display = "none";
+
+    // 4. optional hard reset of page state
+    location.hash = "";
+}
+
 
 /* =========================
    LOAD MESSAGES
