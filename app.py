@@ -327,6 +327,18 @@ async function send() {
 
     input.value = "";
 }
+
+/* =========================
+   PRESS ENTER TO SEND
+========================= */
+
+document.getElementById("msgInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        send();
+    }
+});
+
 </script>
 
 </body>
