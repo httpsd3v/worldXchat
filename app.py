@@ -3,8 +3,8 @@ import os
 
 app = Flask(__name__)
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "YOUR_SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "YOUR_SUPABASE_ANON_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hvaujoxdpowcvbcgoefk.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2YXVqb3hkcG93Y3ZiY2dvZWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4Mzk0NzMsImV4cCI6MjA5MjQxNTQ3M30.TXL8M0LIXUTiOc_-GeEIcTPPpVUPLwon2qCDzuMyApg")
 
 HTML = """
 <!DOCTYPE html>
@@ -64,7 +64,9 @@ ShatterChat X
 </div>
 
 <script>
-const client = supabase.createClient("{{url}}","{{key}}");
+const { createClient } = supabase;
+const client = createClient("{{url}}", "{{key}}");
+
 let currentUser = localStorage.getItem("username");
 
 if(currentUser) start();
