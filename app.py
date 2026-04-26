@@ -119,7 +119,19 @@ HTML_TEMPLATE = """
 
 <header>
     ✨ ShatterChat
-    <button id="logoutBtn" onclick="logout()" style="position:absolute;right:15px;top:10px;display:none;background:red;color:white;padding:6px 12px;border:none;border-radius:10px;">
+
+    <button id="logoutBtn" onclick="logout()" style="
+        position:absolute;
+        right:15px;
+        top:10px;
+        display:none;
+        padding:6px 12px;
+        border:none;
+        border-radius:10px;
+        background:red;
+        color:white;
+        cursor:pointer;
+    ">
         Logout
     </button>
 </header>
@@ -128,7 +140,7 @@ HTML_TEMPLATE = """
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
     <button onclick="register()">Register</button>
-    <button onclick="login()">Login</button>
+    <button onclick="login(); enableNotifications();">Login</button>
 </div>
 
 <div id="chat" style="display:none;"></div>
@@ -150,24 +162,30 @@ const client = supabase.createClient(
 let currentUser = localStorage.getItem("username");
 let channel = null;
 
-/* ================= NOTIFICATIONS ================= */
+/* =========================
+   NOTIFICATIONS FIXED
+========================= */
 function enableNotifications() {
-    if ("Notification" in window && Notification.permission !== "granted") {
-        Notification.requestPermission();
+    if (!("Notification" in window)) return;
+
+    if (Notification.permission === "default") {
+        Notification.requestPermission().then(p => {
+            console.log("Permission:", p);
+        });
     }
 }
 
-/* ================= START CHAT ================= */
+/* =========================
+   START CHAT
+========================= */
 function startChat() {
     document.getElementById("auth").style.display = "none";
     document.getElementById("chat").style.display = "flex";
     document.getElementById("chatInput").style.display = "flex";
     document.getElementById("logoutBtn").style.display = "block";
 
-    enableNotifications();
     fetchHistory();
 
-    // prevent duplicate subscriptions
     if (channel) {
         client.removeChannel(channel);
     }
@@ -179,32 +197,44 @@ function startChat() {
             payload => {
                 renderMsg(payload.new);
 
+                console.log("New message:", payload.new);
+
                 if (payload.new.username !== currentUser) {
+
                     if (Notification.permission === "granted") {
                         new Notification("💬 " + payload.new.username, {
                             body: payload.new.content
                         });
+                    } else {
+                        console.log("Notifications not allowed:", Notification.permission);
                     }
 
-                    ping.play().catch(()=>{});
+                    ping.play().catch(err => console.log("Audio blocked:", err));
                 }
             }
         )
         .subscribe();
 }
 
-/* ================= REGISTER ================= */
+/* =========================
+   REGISTER
+========================= */
 async function register() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
-    const { error } = await client.from("users").insert([{ username, password }]);
+    const { error } = await client.from("users").insert([
+        { username, password }
+    ]);
+
     if (error) return alert(error.message);
 
     alert("Registered! Now login.");
 }
 
-/* ================= LOGIN ================= */
+/* =========================
+   LOGIN
+========================= */
 async function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
@@ -224,9 +254,11 @@ async function login() {
     startChat();
 }
 
-/* ================= HISTORY ================= */
+/* =========================
+   LOAD HISTORY
+========================= */
 async function fetchHistory() {
-    const { data, error } = await client
+    const { data } = await client
         .from("messages")
         .select("*")
         .order("created_at", { ascending: true });
@@ -236,7 +268,9 @@ async function fetchHistory() {
     data.forEach(renderMsg);
 }
 
-/* ================= RENDER ================= */
+/* =========================
+   RENDER MESSAGE
+========================= */
 function renderMsg(msg) {
     const div = document.createElement("div");
     div.className = "msg " + (msg.username === currentUser ? "me" : "other");
@@ -250,19 +284,26 @@ function renderMsg(msg) {
     document.getElementById("chat").scrollTop = 999999;
 }
 
-/* ================= SEND ================= */
+/* =========================
+   SEND MESSAGE
+========================= */
 async function send() {
     const input = document.getElementById("msgInput");
     if (!input.value) return;
 
     await client.from("messages").insert([
-        { content: input.value, username: currentUser }
+        {
+            content: input.value,
+            username: currentUser
+        }
     ]);
 
     input.value = "";
 }
 
-/* ================= LOGOUT ================= */
+/* =========================
+   LOGOUT
+========================= */
 function logout() {
     localStorage.removeItem("username");
     currentUser = null;
