@@ -26,6 +26,7 @@ HTML_TEMPLATE = """
             flex-direction: column;
             height: 100vh;
         }
+
         body::before {
             content: "";
             position: fixed;
@@ -47,6 +48,7 @@ HTML_TEMPLATE = """
             font-weight: bold;
             border-bottom: 1px solid #222;
             background: black;
+            position: relative;
         }
 
         #chat {
@@ -56,11 +58,8 @@ HTML_TEMPLATE = """
             display: flex;
             flex-direction: column;
             gap: 12px;
-        
             background: rgba(255,255,255,0.05);
             backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .msg {
@@ -73,7 +72,7 @@ HTML_TEMPLATE = """
             background: rgba(255,255,255,0.08);
             border: 1px solid rgba(255,255,255,0.15);
         }
-        
+
         .me {
             margin-left: auto;
             background: linear-gradient(
@@ -83,9 +82,8 @@ HTML_TEMPLATE = """
                 rgba(129,52,175,0.6),
                 rgba(81,91,212,0.6)
             );
-            border-bottom-right-radius: 5px;
         }
-        
+
         .other {
             border-bottom-left-radius: 5px;
         }
@@ -113,20 +111,20 @@ HTML_TEMPLATE = """
         }
 
         button {
-            margin-left: 10px;
             padding: 10px 15px;
             border-radius: 20px;
             border: none;
             background: #3897F0;
-            colour: black;
-            cursor: pointer;            
+            cursor: pointer;
+            color: black;
         }
     </style>
 </head>
 <body>
 
 <header>
-    ✨ShatterChat
+    ✨ ShatterChat
+
     <button id="logoutBtn" onclick="logout()" style="
         position:absolute;
         right:15px;
@@ -154,17 +152,12 @@ HTML_TEMPLATE = """
 
 <div class="input-area" id="chatInput" style="display:none;">
     <input type="text" id="msgInput" placeholder="Message...">
-    <button onclick="send()">send</button>
+    <button onclick="send()">Send</button>
 </div>
 
 <script>
-/* =========================
-   SAFE SUPABASE INIT
-========================= */
 
-if (!window.supabase) {
-    alert("Supabase failed to load!");
-}
+const ping = new Audio("https://actions.google.com/sounds/v1/notifications/notification_1.mp3");
 
 const client = supabase.createClient(
     "{{ url }}",
@@ -174,15 +167,51 @@ const client = supabase.createClient(
 let currentUser = localStorage.getItem("username");
 
 /* =========================
-   START CHAT
+   NOTIFICATIONS
 ========================= */
+function enableNotifications() {
+    if ("Notification" in window) {
+        Notification.requestPermission();
+    }
+}
 
-if (currentUser) startChat();
+/* =========================
+   START CHAT (FIXED - ONLY ONCE)
+========================= */
+function startChat() {
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("chat").style.display = "flex";
+    document.getElementById("chatInput").style.display = "flex";
+    document.getElementById("logoutBtn").style.display = "block";
+
+    enableNotifications();
+    fetchHistory();
+
+    client.channel("room1")
+        .on(
+            "postgres_changes",
+            { event: "INSERT", schema: "public", table: "messages" },
+            payload => {
+                renderMsg(payload.new);
+
+                if (payload.new.username !== currentUser) {
+                    if (Notification.permission === "granted") {
+                        new Notification("💬 " + payload.new.username, {
+                            body: payload.new.content,
+                            icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png"
+                        });
+                    }
+
+                    ping.play();
+                }
+            }
+        )
+        .subscribe();
+}
 
 /* =========================
    REGISTER
 ========================= */
-
 async function register() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
@@ -191,10 +220,7 @@ async function register() {
         { username, password }
     ]);
 
-    if (error) {
-        alert(error.message);
-        return;
-    }
+    if (error) return alert(error.message);
 
     alert("Registered! Now login.");
 }
@@ -202,7 +228,6 @@ async function register() {
 /* =========================
    LOGIN
 ========================= */
-
 async function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
@@ -214,76 +239,22 @@ async function login() {
         .eq("password", password)
         .maybeSingle();
 
-    if (error || !data) {
-        alert("Invalid login!");
-        return;
-    }
+    if (error || !data) return alert("Invalid login!");
 
     localStorage.setItem("username", username);
     currentUser = username;
+
     startChat();
 }
 
 /* =========================
-   CHAT START
+   LOAD HISTORY
 ========================= */
-
-function startChat() {
-    document.getElementById("auth").style.display = "none";
-    document.getElementById("chat").style.display = "flex";
-    document.getElementById("chatInput").style.display = "flex";
-
-    document.getElementById("logoutBtn").style.display = "block";
-
-    fetchHistory();
-
-    client.channel("room1")
-        .on(
-            "postgres_changes",
-            { event: "INSERT", schema: "public", table: "messages" },
-            payload => renderMsg(payload.new)
-        )
-        .subscribe();
-}
-
-/* =========================
-   LOG OUT
-========================= */
-function logout() {
-    if (!confirm("Logout?")) return;
-
-    // 1. clear session
-    localStorage.removeItem("username");
-    currentUser = null;
-
-    // 2. clear chat UI
-    document.getElementById("chat").innerHTML = "";
-
-    // 3. reset UI
-    document.getElementById("auth").style.display = "block";
-    document.getElementById("chat").style.display = "none";
-    document.getElementById("chatInput").style.display = "none";
-    document.getElementById("logoutBtn").style.display = "none";
-
-    // 4. optional hard reset of page state
-    location.hash = "";
-}
-
-
-/* =========================
-   LOAD MESSAGES
-========================= */
-
 async function fetchHistory() {
-    const { data, error } = await client
+    const { data } = await client
         .from("messages")
         .select("*")
         .order("created_at", { ascending: true });
-
-    if (error) {
-        console.log(error);
-        return;
-    }
 
     data.forEach(renderMsg);
 }
@@ -291,7 +262,6 @@ async function fetchHistory() {
 /* =========================
    RENDER MESSAGE
 ========================= */
-
 function renderMsg(msg) {
     const div = document.createElement("div");
     div.className = "msg " + (msg.username === currentUser ? "me" : "other");
@@ -308,25 +278,38 @@ function renderMsg(msg) {
 /* =========================
    SEND MESSAGE
 ========================= */
-
 async function send() {
     const input = document.getElementById("msgInput");
     if (!input.value) return;
 
-    const { error } = await client.from("messages").insert([
+    await client.from("messages").insert([
         {
             content: input.value,
             username: currentUser
         }
     ]);
 
-    if (error) {
-        alert(error.message);
-        return;
-    }
-
     input.value = "";
 }
+
+/* =========================
+   LOGOUT
+========================= */
+function logout() {
+    localStorage.removeItem("username");
+    currentUser = null;
+
+    document.getElementById("chat").innerHTML = "";
+
+    document.getElementById("auth").style.display = "block";
+    document.getElementById("chat").style.display = "none";
+    document.getElementById("chatInput").style.display = "none";
+    document.getElementById("logoutBtn").style.display = "none";
+}
+
+/* AUTO LOGIN */
+if (currentUser) startChat();
+
 </script>
 
 </body>
