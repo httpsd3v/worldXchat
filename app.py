@@ -3,10 +3,10 @@ import os
 
 app = Flask(__name__)
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hvaujoxdpowcvbcgoefk.supabase.co")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "MY_SUPEBASE_URL")
 SUPABASE_KEY = os.getenv(
     "SUPABASE_KEY",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2YXVqb3hkcG93Y3ZiY2dvZWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4Mzk0NzMsImV4cCI6MjA5MjQxNTQ3M30.TXL8M0LIXUTiOc_-GeEIcTPPpVUPLwon2qCDzuMyApg"
+    "MY_ANON_KEY"
 )
 
 HTML_TEMPLATE = """
