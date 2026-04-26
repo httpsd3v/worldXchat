@@ -19,7 +19,7 @@ HTML_TEMPLATE = """
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center center fixed;
+            background: url("https://images.unsplash.com/photo-1771756762769-9de82fc43dcb?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D") no-repeat center center fixed;
             background-size: cover;
             color: white;
             display: flex;
@@ -39,6 +39,21 @@ HTML_TEMPLATE = """
             );
             filter: blur(120px);
             z-index: -1;
+        }
+
+        #auth {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 50px 25px;
         }
 
         header {
@@ -104,12 +119,26 @@ HTML_TEMPLATE = """
 
         input {
             flex: 1;
-            padding: 12px 15px;
-            border-radius: 20px;
+            padding: 12px 55px;
+            border-radius: 5px;
+            margin-top: 10px;
             border: 1px solid rgba(255,255,255,0.2);
             background: rgba(255,255,255,0.08);
             color: white;
             outline: none;
+        }
+
+        #Register, #Login {
+            margin-left: 10px;
+            padding: 12px 55px;
+            width: 280px;
+            border-radius: 5px;
+            border: none;
+            background: #3897F0;
+            colour: black;
+            cursor: pointer;  
+            margin-top: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         button {
@@ -146,8 +175,8 @@ HTML_TEMPLATE = """
 <div id="auth">
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
-    <button onclick="register()">Register</button>
-    <button onclick="login()">Login</button>
+    <button onclick="register()" id="Register">Register</button>
+    <button onclick="login()" id="Login">Login</button>
 </div>
 
 <div id="chat" style="display:none;"></div>
