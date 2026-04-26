@@ -3,304 +3,243 @@ import os
 
 app = Flask(__name__)
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hvaujoxdpowcvbcgoefk.supabase.co")
-SUPABASE_KEY = os.getenv(
-    "SUPABASE_KEY",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2YXVqb3hkcG93Y3ZiY2dvZWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4Mzk0NzMsImV4cCI6MjA5MjQxNTQ3M30.TXL8M0LIXUTiOc_-GeEIcTPPpVUPLwon2qCDzuMyApg"
-)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "YOUR_SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "YOUR_SUPABASE_ANON_KEY")
 
-HTML_TEMPLATE = """
+HTML = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mini ShatterChat</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <style>
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center center fixed;
-            background-size: cover;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        body::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            background: linear-gradient(
-                120deg,
-                rgba(245,133,41,0.3),
-                rgba(221,42,123,0.3),
-                rgba(129,52,175,0.3),
-                rgba(81,91,212,0.3)
-            );
-            filter: blur(120px);
-            z-index: -1;
-        }
-
-        header {
-            padding: 15px;
-            text-align: center;
-            font-weight: bold;
-            border-bottom: 1px solid #222;
-            background: black;
-        }
-
-        #chat {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .msg {
-            padding: 12px 16px;
-            border-radius: 20px;
-            max-width: 70%;
-            font-size: 14px;
-            line-height: 1.4;
-            backdrop-filter: blur(15px);
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-        }
-        
-        .me {
-            margin-left: auto;
-            background: linear-gradient(
-                45deg,
-                rgba(245,133,41,0.6),
-                rgba(221,42,123,0.6),
-                rgba(129,52,175,0.6),
-                rgba(81,91,212,0.6)
-            );
-            border-bottom-right-radius: 5px;
-        }
-        
-        .other {
-            border-bottom-left-radius: 5px;
-        }
-
-        .username {
-            font-size: 12px;
-            opacity: 0.7;
-        }
-
-        .input-area {
-            display: flex;
-            padding: 12px;
-            gap: 10px;
-            background: black;
-        }
-
-        input {
-            flex: 1;
-            padding: 12px 15px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.08);
-            color: white;
-            outline: none;
-        }
-
-        button {
-            margin-left: 10px;
-            padding: 10px 15px;
-            border-radius: 20px;
-            border: none;
-            background: #3897F0;
-            colour: black;
-            cursor: pointer;            
-        }
-    </style>
+<title>ShatterChat X</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { margin:0; font-family:sans-serif; background:#111; color:white; display:flex; flex-direction:column; height:100vh;}
+header { padding:10px; background:black; text-align:center; position:relative;}
+#logoutBtn { position:absolute; right:10px; top:8px; display:none;}
+#notifBell { position:absolute; left:10px; top:8px; cursor:pointer;}
+#chat { flex:1; overflow-y:auto; padding:10px; display:none;}
+.msg { padding:8px; border-radius:12px; margin-bottom:8px; max-width:70%;}
+.me { background:#3897F0; margin-left:auto;}
+.other { background:#333;}
+.input-area { display:none; padding:10px; background:black;}
+input, button { padding:8px; border-radius:8px; border:none;}
+button { background:#3897F0; color:white; cursor:pointer;}
+#auth { padding:20px;}
+#profileBox, #suggestions { padding:10px; display:none; background:#000;}
+@media(max-width:768px){ .msg{max-width:90%; font-size:14px;} }
+</style>
 </head>
 <body>
 
-<header>✨ShatterChat</header>
+<header>
+<span id="notifBell">🔔 <span id="notifCount">0</span></span>
+ShatterChat X
+<button id="logoutBtn" onclick="logout()">Logout</button>
+</header>
 
 <div id="auth">
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="register()">Register</button>
-    <button onclick="login()">Login</button>
+<input id="username" placeholder="Username">
+<input id="password" type="password" placeholder="Password">
+<button onclick="register()">Register</button>
+<button onclick="login()">Login</button>
 </div>
 
-<div id="chat" style="display:none;"></div>
+<div id="profileBox">
+<img id="avatar" width="50" height="50" style="border-radius:50%">
+<div id="bio"></div>
+<div>Followers: <span id="followers">0</span></div>
+<input type="file" id="avatarUpload">
+</div>
 
-<div class="input-area" id="chatInput" style="display:none;">
-    <input type="text" id="msgInput" placeholder="Message...">
-    <button onclick="send()">send</button>
+<div id="suggestions"></div>
+
+<div id="chat"></div>
+<div id="typing"></div>
+
+<div class="input-area" id="chatInput">
+<input id="msgInput" placeholder="Message">
+<button onclick="send()">Send</button>
+<button id="recordBtn">🎤</button>
 </div>
 
 <script>
-/* =========================
-   SAFE SUPABASE INIT
-========================= */
-
-if (!window.supabase) {
-    alert("Supabase failed to load!");
-}
-
-const client = supabase.createClient(
-    "{{ url }}",
-    "{{ key }}"
-);
-
+const client = supabase.createClient("{{url}}","{{key}}");
 let currentUser = localStorage.getItem("username");
 
-/* =========================
-   START CHAT
-========================= */
+if(currentUser) start();
 
-if (currentUser) startChat();
-
-/* =========================
-   REGISTER
-========================= */
-
-async function register() {
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-
-    const { error } = await client.from("users").insert([
-        { username, password }
-    ]);
-
-    if (error) {
-        alert(error.message);
-        return;
-    }
-
-    alert("Registered! Now login.");
+async function register(){
+ await client.from("users").insert([{username:username.value,password:password.value}]);
+ alert("Registered");
 }
 
-/* =========================
-   LOGIN
-========================= */
-
-async function login() {
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-
-    const { data, error } = await client
-        .from("users")
-        .select("*")
-        .eq("username", username)
-        .eq("password", password)
-        .maybeSingle();
-
-    if (error || !data) {
-        alert("Invalid login!");
-        return;
-    }
-
-    localStorage.setItem("username", username);
-    currentUser = username;
-    startChat();
+async function login(){
+ const {data} = await client.from("users")
+  .select("*")
+  .eq("username",username.value)
+  .eq("password",password.value)
+  .maybeSingle();
+ if(!data) return alert("Invalid");
+ localStorage.setItem("username",username.value);
+ currentUser=username.value;
+ start();
 }
 
-/* =========================
-   CHAT START
-========================= */
-
-function startChat() {
-    document.getElementById("auth").style.display = "none";
-    document.getElementById("chat").style.display = "flex";
-    document.getElementById("chatInput").style.display = "flex";
-
-    fetchHistory();
-
-    client.channel("room1")
-        .on(
-            "postgres_changes",
-            { event: "INSERT", schema: "public", table: "messages" },
-            payload => renderMsg(payload.new)
-        )
-        .subscribe();
+async function start(){
+ auth.style.display="none";
+ chat.style.display="block";
+ chatInput.style.display="flex";
+ logoutBtn.style.display="block";
+ profileBox.style.display="block";
+ suggestions.style.display="block";
+ await setOnline();
+ loadProfile();
+ loadSuggestions();
+ loadNotifications();
+ loadMessages();
+ subscribe();
 }
 
-/* =========================
-   LOAD MESSAGES
-========================= */
-
-async function fetchHistory() {
-    const { data, error } = await client
-        .from("messages")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-    if (error) {
-        console.log(error);
-        return;
-    }
-
-    data.forEach(renderMsg);
+function logout(){
+ if(!confirm("Logout?")) return;
+ localStorage.removeItem("username");
+ location.reload();
 }
 
-/* =========================
-   RENDER MESSAGE
-========================= */
-
-function renderMsg(msg) {
-    const div = document.createElement("div");
-    div.className = "msg " + (msg.username === currentUser ? "me" : "other");
-
-    div.innerHTML = `
-        <div class="username">${msg.username || "unknown"}</div>
-        <div>${msg.content}</div>
-    `;
-
-    document.getElementById("chat").appendChild(div);
-    document.getElementById("chat").scrollTop = 999999;
+async function setOnline(){
+ await client.from("online_users").upsert({username:currentUser});
 }
 
-/* =========================
-   SEND MESSAGE
-========================= */
-
-async function send() {
-    const input = document.getElementById("msgInput");
-    if (!input.value) return;
-
-    const { error } = await client.from("messages").insert([
-        {
-            content: input.value,
-            username: currentUser
-        }
-    ]);
-
-    if (error) {
-        alert(error.message);
-        return;
-    }
-
-    input.value = "";
+async function loadProfile(){
+ const {data} = await client.from("profiles")
+  .select("*").eq("username",currentUser).maybeSingle();
+ if(!data) return;
+ bio.textContent=data.bio||"No bio";
+ avatar.src=data.avatar_url||"https://via.placeholder.com/50";
+ followers.textContent=data.followers||0;
 }
+
+avatarUpload.onchange=async(e)=>{
+ const file=e.target.files[0];
+ const path=currentUser+"-"+Date.now();
+ await client.storage.from("avatars").upload(path,file);
+ const {data}=client.storage.from("avatars").getPublicUrl(path);
+ await client.from("profiles")
+  .update({avatar_url:data.publicUrl})
+  .eq("username",currentUser);
+ loadProfile();
+};
+
+async function loadSuggestions(){
+ const {data}=await client.from("profiles")
+  .select("username").neq("username",currentUser).limit(5);
+ suggestions.innerHTML="<h4>People You May Know</h4>";
+ data.forEach(u=>{
+  const div=document.createElement("div");
+  div.textContent=u.username;
+  div.onclick=()=>follow(u.username);
+  suggestions.appendChild(div);
+ });
+}
+
+async function follow(user){
+ await client.from("follows").insert([{follower:currentUser,following:user}]);
+ await client.from("notifications").insert([{
+  username:user,
+  message:currentUser+" followed you"
+ }]);
+ alert("Followed");
+}
+
+async function loadNotifications(){
+ const {data}=await client.from("notifications")
+  .select("*").eq("username",currentUser).eq("is_read",false);
+ notifCount.textContent=data.length;
+}
+
+async function loadMessages(){
+ const {data}=await client.from("messages")
+  .select("*").order("created_at",{ascending:true});
+ data.forEach(render);
+}
+
+function render(msg){
+ const div=document.createElement("div");
+ div.className="msg "+(msg.username===currentUser?"me":"other");
+ if(msg.parent_id) div.style.marginLeft="20px";
+ if(msg.content.endsWith(".webm")){
+  const audio=document.createElement("audio");
+  audio.controls=true;
+  audio.src=msg.content;
+  div.appendChild(audio);
+ }else{
+  div.textContent=msg.username+": "+msg.content;
+ }
+ chat.appendChild(div);
+ chat.scrollTop=chat.scrollHeight;
+}
+
+async function send(parent=null){
+ if(!msgInput.value) return;
+ await client.from("messages").insert([{
+  username:currentUser,
+  content:msgInput.value,
+  parent_id:parent
+ }]);
+ msgInput.value="";
+}
+
+msgInput.addEventListener("input",async()=>{
+ await client.from("typing").upsert({username:currentUser,is_typing:true});
+ setTimeout(async()=>{
+  await client.from("typing").upsert({username:currentUser,is_typing:false});
+ },1000);
+});
+
+function subscribe(){
+ client.channel("room")
+  .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},
+   p=>render(p.new))
+  .subscribe();
+
+ client.channel("typing")
+  .on("postgres_changes",{event:"*",schema:"public",table:"typing"},
+   p=>{
+    if(p.new.username!==currentUser && p.new.is_typing)
+     typing.textContent=p.new.username+" is typing...";
+    else typing.textContent="";
+   }).subscribe();
+}
+
+let mediaRecorder;
+let chunks=[];
+recordBtn.onclick=async()=>{
+ const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+ mediaRecorder=new MediaRecorder(stream);
+ mediaRecorder.start();
+ mediaRecorder.ondataavailable=e=>chunks.push(e.data);
+ mediaRecorder.onstop=async()=>{
+  const blob=new Blob(chunks);
+  const path=currentUser+"-"+Date.now()+".webm";
+  await client.storage.from("voice").upload(path,blob);
+  const {data}=client.storage.from("voice").getPublicUrl(path);
+  await client.from("messages").insert([{
+   username:currentUser,
+   content:data.publicUrl
+  }]);
+  chunks=[];
+ };
+ setTimeout(()=>mediaRecorder.stop(),4000);
+};
 </script>
-
 </body>
 </html>
 """
 
-@app.route('/')
-def index():
-    return render_template_string(
-        HTML_TEMPLATE,
-        url=SUPABASE_URL,
-        key=SUPABASE_KEY
-    )
+@app.route("/")
+def home():
+    return render_template_string(HTML, url=SUPABASE_URL, key=SUPABASE_KEY)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+if __name__ == "__main__":
+    app.run(debug=True)
