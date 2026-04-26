@@ -126,13 +126,9 @@ HTML_TEMPLATE = """
         }
     </style>
 </head>
-
 <body>
 
-<header>
-    ✨ ShatterChat
-    <button id="logoutBtn" onclick="logout()">Logout</button>
-</header>
+<header>✨ShatterChat</header>
 
 <div id="auth">
     <input type="text" id="username" placeholder="Username">
@@ -141,67 +137,94 @@ HTML_TEMPLATE = """
     <button onclick="login()">Login</button>
 </div>
 
-<div id="chat"></div>
+<div id="chat" style="display:none;"></div>
 
-<div class="input-area" id="chatInput">
+<div class="input-area" id="chatInput" style="display:none;">
     <input type="text" id="msgInput" placeholder="Message...">
-    <button onclick="send()">Send</button>
+    <button onclick="send()">send</button>
 </div>
 
 <script>
+/* =========================
+   SAFE SUPABASE INIT
+========================= */
 
-const client = supabase.createClient("{{ url }}", "{{ key }}");
+if (!window.supabase) {
+    alert("Supabase failed to load!");
+}
+
+const client = supabase.createClient(
+    "{{ url }}",
+    "{{ key }}"
+);
 
 let currentUser = localStorage.getItem("username");
+
+/* =========================
+   START CHAT
+========================= */
 
 if (currentUser) startChat();
 
 /* =========================
    REGISTER
 ========================= */
-async function register() {
-    const username = username.value;
-    const password = password.value;
 
-    await client.from("users").insert([{ username, password }]);
-    alert("Registered!");
+async function register() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    const { error } = await client.from("users").insert([
+        { username, password }
+    ]);
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    alert("Registered! Now login.");
 }
 
 /* =========================
    LOGIN
 ========================= */
-async function login() {
-    const usernameVal = username.value;
-    const passwordVal = password.value;
 
-    const { data } = await client
+async function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    const { data, error } = await client
         .from("users")
         .select("*")
-        .eq("username", usernameVal)
-        .eq("password", passwordVal)
+        .eq("username", username)
+        .eq("password", password)
         .maybeSingle();
 
-    if (!data) return alert("Invalid login!");
+    if (error || !data) {
+        alert("Invalid login!");
+        return;
+    }
 
-    localStorage.setItem("username", usernameVal);
-    currentUser = usernameVal;
-
+    localStorage.setItem("username", username);
+    currentUser = username;
     startChat();
 }
 
 /* =========================
-   START CHAT
+   CHAT START
 ========================= */
+
 function startChat() {
-    auth.style.display = "none";
-    chat.style.display = "flex";
-    chatInput.style.display = "flex";
-    logoutBtn.style.display = "block";
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("chat").style.display = "flex";
+    document.getElementById("chatInput").style.display = "flex";
 
     fetchHistory();
 
     client.channel("room1")
-        .on("postgres_changes",
+        .on(
+            "postgres_changes",
             { event: "INSERT", schema: "public", table: "messages" },
             payload => renderMsg(payload.new)
         )
@@ -209,30 +232,19 @@ function startChat() {
 }
 
 /* =========================
-   LOGOUT (NEW)
-========================= */
-function logout() {
-    if (!confirm("Are you sure you want to logout?")) return;
-
-    localStorage.removeItem("username");
-    currentUser = null;
-
-    chat.innerHTML = "";
-
-    auth.style.display = "block";
-    chat.style.display = "none";
-    chatInput.style.display = "none";
-    logoutBtn.style.display = "none";
-}
-
-/* =========================
    LOAD MESSAGES
 ========================= */
+
 async function fetchHistory() {
-    const { data } = await client
+    const { data, error } = await client
         .from("messages")
         .select("*")
         .order("created_at", { ascending: true });
+
+    if (error) {
+        console.log(error);
+        return;
+    }
 
     data.forEach(renderMsg);
 }
@@ -240,30 +252,42 @@ async function fetchHistory() {
 /* =========================
    RENDER MESSAGE
 ========================= */
+
 function renderMsg(msg) {
     const div = document.createElement("div");
     div.className = "msg " + (msg.username === currentUser ? "me" : "other");
 
-    div.textContent = msg.username + ": " + msg.content;
+    div.innerHTML = `
+        <div class="username">${msg.username || "unknown"}</div>
+        <div>${msg.content}</div>
+    `;
 
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
+    document.getElementById("chat").appendChild(div);
+    document.getElementById("chat").scrollTop = 999999;
 }
 
 /* =========================
    SEND MESSAGE
 ========================= */
+
 async function send() {
-    if (!msgInput.value) return;
+    const input = document.getElementById("msgInput");
+    if (!input.value) return;
 
-    await client.from("messages").insert([{
-        username: currentUser,
-        content: msgInput.value
-    }]);
+    const { error } = await client.from("messages").insert([
+        {
+            content: input.value,
+            username: currentUser
+        }
+    ]);
 
-    msgInput.value = "";
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    input.value = "";
 }
-
 </script>
 
 </body>
