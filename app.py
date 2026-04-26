@@ -24,23 +24,10 @@ HTML_TEMPLATE = """
             color: white;
             display: flex;
             flex-direction: column;
+            backdrop-filter: blur(2px);
             height: 100vh;
         }
-        body::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            background: linear-gradient(
-                120deg,
-                rgba(245,133,41,0.3),
-                rgba(221,42,123,0.3),
-                rgba(129,52,175,0.3),
-                rgba(81,91,212,0.3)
-            );
-            filter: blur(10px);
-            z-index: -1;
-        }
-
+        
         #auth {
             display: flex;
             justify-content: center;
