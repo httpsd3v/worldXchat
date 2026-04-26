@@ -3,11 +3,8 @@ import os
 
 app = Flask(__name__)
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "MY_SUPEBASE_URL")
-SUPABASE_KEY = os.getenv(
-    "SUPABASE_KEY",
-    "MY_ANON_KEY"
-)
+SUPABASE_URL = os.getenv("MY_SUPEBASE_URL")
+SUPABASE_KEY = os.getenv("MY_ANON_KEY")
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
