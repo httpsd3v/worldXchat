@@ -68,7 +68,6 @@ HTML_TEMPLATE = """
             max-width: 70%;
             font-size: 14px;
             line-height: 1.4;
-            backdrop-filter: blur(15px);
             background: rgba(255,255,255,0.08);
             border: 1px solid rgba(255,255,255,0.15);
         }
@@ -82,10 +81,6 @@ HTML_TEMPLATE = """
                 rgba(129,52,175,0.6),
                 rgba(81,91,212,0.6)
             );
-        }
-
-        .other {
-            border-bottom-left-radius: 5px;
         }
 
         .username {
@@ -102,7 +97,7 @@ HTML_TEMPLATE = """
 
         input {
             flex: 1;
-            padding: 12px 15px;
+            padding: 12px;
             border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.2);
             background: rgba(255,255,255,0.08);
@@ -124,19 +119,7 @@ HTML_TEMPLATE = """
 
 <header>
     ✨ ShatterChat
-
-    <button id="logoutBtn" onclick="logout()" style="
-        position:absolute;
-        right:15px;
-        top:10px;
-        display:none;
-        padding:6px 12px;
-        border:none;
-        border-radius:10px;
-        background:red;
-        color:white;
-        cursor:pointer;
-    ">
+    <button id="logoutBtn" onclick="logout()" style="position:absolute;right:15px;top:10px;display:none;background:red;color:white;padding:6px 12px;border:none;border-radius:10px;">
         Logout
     </button>
 </header>
@@ -165,19 +148,16 @@ const client = supabase.createClient(
 );
 
 let currentUser = localStorage.getItem("username");
+let channel = null;
 
-/* =========================
-   NOTIFICATIONS
-========================= */
+/* ================= NOTIFICATIONS ================= */
 function enableNotifications() {
-    if ("Notification" in window) {
+    if ("Notification" in window && Notification.permission !== "granted") {
         Notification.requestPermission();
     }
 }
 
-/* =========================
-   START CHAT (FIXED - ONLY ONCE)
-========================= */
+/* ================= START CHAT ================= */
 function startChat() {
     document.getElementById("auth").style.display = "none";
     document.getElementById("chat").style.display = "flex";
@@ -187,7 +167,12 @@ function startChat() {
     enableNotifications();
     fetchHistory();
 
-    client.channel("room1")
+    // prevent duplicate subscriptions
+    if (channel) {
+        client.removeChannel(channel);
+    }
+
+    channel = client.channel("room1")
         .on(
             "postgres_changes",
             { event: "INSERT", schema: "public", table: "messages" },
@@ -197,37 +182,29 @@ function startChat() {
                 if (payload.new.username !== currentUser) {
                     if (Notification.permission === "granted") {
                         new Notification("💬 " + payload.new.username, {
-                            body: payload.new.content,
-                            icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png"
+                            body: payload.new.content
                         });
                     }
 
-                    ping.play();
+                    ping.play().catch(()=>{});
                 }
             }
         )
         .subscribe();
 }
 
-/* =========================
-   REGISTER
-========================= */
+/* ================= REGISTER ================= */
 async function register() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
-    const { error } = await client.from("users").insert([
-        { username, password }
-    ]);
-
+    const { error } = await client.from("users").insert([{ username, password }]);
     if (error) return alert(error.message);
 
     alert("Registered! Now login.");
 }
 
-/* =========================
-   LOGIN
-========================= */
+/* ================= LOGIN ================= */
 async function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
@@ -247,21 +224,19 @@ async function login() {
     startChat();
 }
 
-/* =========================
-   LOAD HISTORY
-========================= */
+/* ================= HISTORY ================= */
 async function fetchHistory() {
-    const { data } = await client
+    const { data, error } = await client
         .from("messages")
         .select("*")
         .order("created_at", { ascending: true });
 
+    if (!data) return;
+
     data.forEach(renderMsg);
 }
 
-/* =========================
-   RENDER MESSAGE
-========================= */
+/* ================= RENDER ================= */
 function renderMsg(msg) {
     const div = document.createElement("div");
     div.className = "msg " + (msg.username === currentUser ? "me" : "other");
@@ -275,26 +250,19 @@ function renderMsg(msg) {
     document.getElementById("chat").scrollTop = 999999;
 }
 
-/* =========================
-   SEND MESSAGE
-========================= */
+/* ================= SEND ================= */
 async function send() {
     const input = document.getElementById("msgInput");
     if (!input.value) return;
 
     await client.from("messages").insert([
-        {
-            content: input.value,
-            username: currentUser
-        }
+        { content: input.value, username: currentUser }
     ]);
 
     input.value = "";
 }
 
-/* =========================
-   LOGOUT
-========================= */
+/* ================= LOGOUT ================= */
 function logout() {
     localStorage.removeItem("username");
     currentUser = null;
@@ -305,6 +273,11 @@ function logout() {
     document.getElementById("chat").style.display = "none";
     document.getElementById("chatInput").style.display = "none";
     document.getElementById("logoutBtn").style.display = "none";
+
+    if (channel) {
+        client.removeChannel(channel);
+        channel = null;
+    }
 }
 
 /* AUTO LOGIN */
