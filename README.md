@@ -1,4 +1,4 @@
-# ✨ Mini ShatterChat
+# ✨ ShatterChat Mini
 
 Mini ShatterChat is a simple real-time chat application built using:
 
